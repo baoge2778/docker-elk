@@ -6,7 +6,7 @@ env:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y expect jq
+  - sudo apt-get install -y jq
 
 install:
   # Install Docker Compose
@@ -26,7 +26,7 @@ script:
   # Compose
   - docker-compose up -d elasticsearch
   - sleep 30
-  - .travis/elasticsearch-setup-passwords.exp
+  - .travis/elasticsearch-setup-passwords.sh
   - docker-compose up -d
   - .travis/run-tests.sh
   - docker-compose ps
@@ -41,7 +41,7 @@ script:
   - docker service scale elk_kibana=0 --detach=false
   - docker service scale elk_logstash=0 --detach=false
   - sleep 40
-  - .travis/elasticsearch-setup-passwords.exp swarm
+  - .travis/elasticsearch-setup-passwords.sh
   - docker service scale elk_kibana=1 --detach=false
   - docker service scale elk_logstash=1 --detach=false
   - .travis/run-tests.sh swarm

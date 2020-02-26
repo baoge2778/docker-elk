@@ -64,7 +64,7 @@ log 'Waiting for Kibana readiness'
 poll_ready kibana 'http://localhost:5601/api/status' 'kibana:changeme'
 
 log 'Waiting for Logstash readiness'
-poll_ready logstash 'http://localhost:9600/_node/pipelines/main?pretty'
+poll_ready logstash 'http://localhost:9600/_node/pipeline?pretty'
 
 log 'Creating Logstash index pattern in Kibana'
 source .env
@@ -76,16 +76,18 @@ curl -X POST -D- 'http://localhost:5601/api/saved_objects/index-pattern' \
 	-d '{"attributes":{"title":"logstash-*","timeFieldName":"@timestamp"}}'
 
 log 'Searching index pattern via Kibana API'
-response="$(curl 'http://localhost:5601/api/saved_objects/_find?type=index-pattern' -s -u elastic:changeme)"
+response="$(curl 'http://localhost:5601/api/saved_objects' -s -u elastic:changeme)"
 echo "$response"
 count="$(jq -rn --argjson data "${response}" '$data.total')"
-if [[ $count -ne 1 ]]; then
-	echo "Expected 1 index pattern, got ${count}"
+# NOTE: The Kibana 5.x API does not support finding Saved Objects, so we simply
+# assert the presence of 2 objects (Kibana always has 1 object of type "config")
+if [[ $count -ne 2 ]]; then
+	echo "Expected 2 saved objects, got ${count}"
 	exit 1
 fi
 
 log 'Sending message to Logstash TCP input'
-echo 'dockerelk' | nc localhost 5000
+echo 'dockerelk' | nc -q0 localhost 5000
 
 sleep 1
 curl -X POST 'http://localhost:9200/_refresh' -u elastic:changeme \
